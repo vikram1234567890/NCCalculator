@@ -1,4 +1,3 @@
-sdsdf vbnhv
 
 package com.c.nccalculator;
 
