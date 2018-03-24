@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/aboutctivityid"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+android:background="@color/bg"
+    >
+
+            <TextView
+                android:id="@+id/textView1"
+
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="fill_vertical|center|clip_vertical"
+                android:textAppearance="?android:attr/textAppearanceLarge"
+                android:background="@color/white"
+                />
+
+
+
+
+    </LinearLayout>
+
