@@ -1,4 +1,4 @@
-nnnnnnnnnnnnnnnnnnnnnnnn
+
 package com.c.nccalculator;
 
 import android.Manifest;
