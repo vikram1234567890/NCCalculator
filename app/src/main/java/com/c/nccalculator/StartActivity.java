@@ -2,24 +2,31 @@
 package com.c.nccalculator;
 
 import android.Manifest;
-import android.app.AlertDialog.Builder;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.Vibrator;
+import android.support.design.widget.NavigationView;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.view.GravityCompat;
+import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
-import android.view.Menu;
-import android.view.MenuInflater;
+import android.view.Gravity;
+import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -28,9 +35,11 @@ import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemSelectedListener;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
-import android.widget.EditText;
+import android.widget.TextView;
+import android.widget.ImageButton;
+import android.widget.LinearLayout;
+import android.widget.SlidingDrawer;
 import android.widget.Spinner;
-import android.widget.TableLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -56,20 +65,25 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
-public class StartActivity extends AppCompatActivity implements OnClickListener {
+
+public class StartActivity extends AppCompatActivity implements OnClickListener, DrawerLayout.DrawerListener {
 
 
-	static EditText eText1, eText2, eText3, eText4, eText5;
+	static TextView eText1, eText2, eText3, eText4, eText5;
 	static TextView tView1, tView2, tView3, tView4;
-	Button bone, btwo, bthree, bfour, bfive, bsix, bseven, beight, bnine, bzero, bdot, bplus, bminus, bmultiplication, bdivide, bequalto, bhide, bpower, broot, bcancel, bfactorial, bcut, ba, bb, bc, bd, be, bf, bopenbracket, bclosedbraclet;
+	Button bone, btwo, bthree, bfour, bfive, bsix, bseven, beight, bnine, bzero, bdot, bplus, bminus, bmultiplication, bdivide, bequalto, bpower, broot, bcancel, bfactorial, ba, bb, bc, bd, be, bf, bopenbracket, bclosedbraclet;
+	ImageButton bhelp;
 	static String s = "";
 	String[] NumberSystem = {"General mode", "From Binary", "From Decimal", "From Octal", "From HexaDecimal"};
 	Editable str = null;
-	TableLayout tableLayout;
 	SharedPreferences sharedPreferences;
 	Vibrator vibrate;
 	String shared_pref = "shared_pref";
 	private String version;
+	private AlertDialog alertDialog;
+	private LinearLayout tut_1, tut_2, tut_3;
+	private Button tut_1_btn, tut_2_btn, tut_3_btn;
+	private DrawerLayout drawer;
 
 	public StartActivity() {
 
@@ -80,28 +94,16 @@ public class StartActivity extends AppCompatActivity implements OnClickListener 
 	static String[] otherList;
 	Boolean equal = false;
 	private AdView mAdView, adView1;
+	static boolean update_check = false, first_time = true;
 	InterstitialAd mInterstitialAd;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.start_activity);
-		getSupportActionBar().setDisplayUseLogoEnabled(true);
-		getSupportActionBar().setDisplayShowHomeEnabled(true);
-		getSupportActionBar().setLogo(R.mipmap.ic_launcher);
-		tableLayout = (TableLayout) findViewById(R.id.keyboardLayout);
 
-		MobileAds.initialize(getApplicationContext(), "ca-app-pub-1211635675454735~1301340403");
-
-		adView1 = (AdView) findViewById(R.id.ad_view);
-
-		mAdView = (AdView) findViewById(R.id.ad_view);
-		AdRequest adRequest = new AdRequest.Builder()
-				.addTestDevice(AdRequest.DEVICE_ID_EMULATOR)
-				.build();
-		mAdView.loadAd(adRequest);
-		adView1.loadAd(adRequest);
-
+		drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+		drawer.setDrawerListener(this);
 		vibrate = (Vibrator) this.getSystemService(Context.VIBRATOR_SERVICE);
 		count = 0;
 		tView1 = (TextView) findViewById(R.id.textView1);
@@ -109,25 +111,39 @@ public class StartActivity extends AppCompatActivity implements OnClickListener 
 		tView3 = (TextView) findViewById(R.id.textView3);
 		tView4 = (TextView) findViewById(R.id.textView4);
 
-		eText1 = (EditText) findViewById(R.id.editText1);
-		eText2 = (EditText) findViewById(R.id.editText2);
-		eText3 = (EditText) findViewById(R.id.editText3);
-		eText4 = (EditText) findViewById(R.id.editText4);
-		eText5 = (EditText) findViewById(R.id.editText5);
-		eText1.requestFocus();
-		eText1.setCursorVisible(true);
+		eText1 = (TextView) findViewById(R.id.editText1);
+		eText2 = (TextView) findViewById(R.id.editText2);
+		eText3 = (TextView) findViewById(R.id.editText3);
+		eText4 = (TextView) findViewById(R.id.editText4);
+		eText5 = (TextView) findViewById(R.id.editText5);
+		tut_1 = (LinearLayout) findViewById(R.id.tut_1);
+		tut_2 = (LinearLayout) findViewById(R.id.tut_2);
+		tut_3 = (LinearLayout) findViewById(R.id.tut_3);
+
+		tut_1_btn = (Button) findViewById(R.id.tut_1_btn);
+		tut_2_btn = (Button) findViewById(R.id.tut_2_btn);
+		tut_3_btn = (Button) findViewById(R.id.tut_3_btn);
+
+		tut_1_btn.setOnClickListener(this);
+		tut_2_btn.setOnClickListener(this);
+		tut_3_btn.setOnClickListener(this);
+
+		if (getSharedPref("tutorial", this).equals("")) {
+			tut_1();
+		}
 		eText1.setOnClickListener(this);
 		if (!getSharedPref("change", this).contains("yes")) {
 			changeSharedPref("Rate", "no", this);
 			changeSharedPref("TempStore", "", this);
 			changeSharedPref("Vibrate", "on", this);
 			changeSharedPref("change", "yes", this);
+
 		}
 		if (getSharedPref("TempStore", this).trim().length() != 0) {
 			eText1.setText(getSharedPref("TempStore", this));
 
 		}
-		eText1.addTextChangedListener(new TextWatcher() {
+			eText1.addTextChangedListener(new TextWatcher() {
 			@Override
 			public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
 
@@ -136,8 +152,7 @@ public class StartActivity extends AppCompatActivity implements OnClickListener 
 
 			@Override
 			public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-
-				changeSharedPref("TempStore", eText1.getText().toString(), StartActivity.this);
+					changeSharedPref("TempStore", eText1.getText().toString(), StartActivity.this);
 
 
 			}
@@ -174,11 +189,10 @@ public class StartActivity extends AppCompatActivity implements OnClickListener 
 		bpower = (Button) findViewById(R.id.power);
 		broot = (Button) findViewById(R.id.Root);
 		bcancel = (Button) findViewById(R.id.cancel);
-		bcut = (Button) findViewById(R.id.cut);
 		bfactorial = (Button) findViewById(R.id.factorial);
-		bhide = (Button) findViewById(R.id.hide);
 		bopenbracket = (Button) findViewById(R.id.openB);
 		bclosedbraclet = (Button) findViewById(R.id.closedB);
+		bhelp = (ImageButton) findViewById(R.id.help);
 
 
 		bone.setOnClickListener(StartActivity.this);
@@ -204,15 +218,14 @@ public class StartActivity extends AppCompatActivity implements OnClickListener 
 		be.setOnClickListener(StartActivity.this);
 		bf.setOnClickListener(StartActivity.this);
 		bcancel.setOnClickListener(StartActivity.this);
-
-		bcut.setOnClickListener(StartActivity.this);
 		bdot.setOnClickListener(StartActivity.this);
 		bfactorial.setOnClickListener(StartActivity.this);
 		bpower.setOnClickListener(StartActivity.this);
 		broot.setOnClickListener(StartActivity.this);
-		bhide.setOnClickListener(StartActivity.this);
 		bopenbracket.setOnClickListener(StartActivity.this);
 		bclosedbraclet.setOnClickListener(StartActivity.this);
+		bhelp.setOnClickListener(StartActivity.this);
+
 		try {
 			if (getIntent().getStringExtra("H").trim().length() != 0) {
 				eText1.setText(getIntent().getStringExtra("H"));
@@ -252,66 +265,76 @@ public class StartActivity extends AppCompatActivity implements OnClickListener 
 
 				switch (spinindex) {
 					case 0:
-						if (eText1.getText().toString().length() != 0) {
+						if (!first_time) {
+							if (eText1.getText().toString().length() != 0) {
 
-							eText2.setText("");
-							eText3.setText("");
-							eText4.setText("");
-							eText5.setText("");
+								eText2.setText("");
+								eText3.setText("");
+								eText4.setText("");
+								eText5.setText("");
+							}
+
+							tView1.setVisibility(View.GONE);
+							tView2.setVisibility(View.GONE);
+							tView3.setVisibility(View.GONE);
+							tView4.setVisibility(View.GONE);
+
+							eText2.setVisibility(View.GONE);
+							eText3.setVisibility(View.GONE);
+							eText4.setVisibility(View.GONE);
+							eText5.setVisibility(View.GONE);
+							btwo.setClickable(true);
+							bthree.setClickable(true);
+							bfour.setClickable(true);
+							bfive.setClickable(true);
+							bsix.setClickable(true);
+							bseven.setClickable(true);
+							beight.setClickable(true);
+							bnine.setClickable(true);
+
+							btwo.setTextColor((getResources().getColor(R.color.white)));
+							bthree.setTextColor((getResources().getColor(R.color.white)));
+							bfour.setTextColor((getResources().getColor(R.color.white)));
+							bfive.setTextColor((getResources().getColor(R.color.white)));
+							bsix.setTextColor((getResources().getColor(R.color.white)));
+							bseven.setTextColor((getResources().getColor(R.color.white)));
+							beight.setTextColor((getResources().getColor(R.color.white)));
+							bnine.setTextColor((getResources().getColor(R.color.white)));
+
+							ba.setEnabled(false);
+							bb.setEnabled(false);
+							bc.setEnabled(false);
+							bd.setEnabled(false);
+							be.setEnabled(false);
+							bf.setEnabled(false);
+
+							ba.setClickable(false);
+							bb.setClickable(false);
+							bc.setClickable(false);
+							bd.setClickable(false);
+							be.setClickable(false);
+							bf.setClickable(false);
+
+							ba.setTextColor((getResources().getColor(R.color.light_green)));
+							bb.setTextColor((getResources().getColor(R.color.light_green)));
+							bc.setTextColor((getResources().getColor(R.color.light_green)));
+							bd.setTextColor((getResources().getColor(R.color.light_green)));
+							be.setTextColor((getResources().getColor(R.color.light_green)));
+							bf.setTextColor((getResources().getColor(R.color.light_green)));
+
+							bfactorial.setClickable(true);
+							bpower.setClickable(true);
+							broot.setClickable(true);
+							bfactorial.setTextColor((getResources().getColor(R.color.black)));
+							bpower.setTextColor((getResources().getColor(R.color.black)));
+							broot.setTextColor((getResources().getColor(R.color.black)));
+
+						} else {
+							first_time = false;
 						}
-
-						tView1.setVisibility(View.GONE);
-						tView2.setVisibility(View.GONE);
-						tView3.setVisibility(View.GONE);
-						tView4.setVisibility(View.GONE);
-
-						eText2.setVisibility(View.GONE);
-						eText3.setVisibility(View.GONE);
-						eText4.setVisibility(View.GONE);
-						eText5.setVisibility(View.GONE);
-						btwo.setClickable(true);
-						bthree.setClickable(true);
-						bfour.setClickable(true);
-						bfive.setClickable(true);
-						bsix.setClickable(true);
-						bseven.setClickable(true);
-						beight.setClickable(true);
-						bnine.setClickable(true);
-
-						btwo.setTextColor((getResources().getColor(R.color.black)));
-						bthree.setTextColor((getResources().getColor(R.color.black)));
-						bfour.setTextColor((getResources().getColor(R.color.black)));
-						bfive.setTextColor((getResources().getColor(R.color.black)));
-						bsix.setTextColor((getResources().getColor(R.color.black)));
-						bseven.setTextColor((getResources().getColor(R.color.black)));
-						beight.setTextColor((getResources().getColor(R.color.black)));
-						bnine.setTextColor((getResources().getColor(R.color.black)));
-
-
-						ba.setClickable(false);
-						bb.setClickable(false);
-						bc.setClickable(false);
-						bd.setClickable(false);
-						be.setClickable(false);
-						bf.setClickable(false);
-
-						ba.setTextColor((getResources().getColor(R.color.diabletextColor)));
-						bb.setTextColor((getResources().getColor(R.color.diabletextColor)));
-						bc.setTextColor((getResources().getColor(R.color.diabletextColor)));
-						bd.setTextColor((getResources().getColor(R.color.diabletextColor)));
-						be.setTextColor((getResources().getColor(R.color.diabletextColor)));
-						bf.setTextColor((getResources().getColor(R.color.diabletextColor)));
-
-						bfactorial.setClickable(true);
-						bpower.setClickable(true);
-						broot.setClickable(true);
-						bfactorial.setTextColor((getResources().getColor(R.color.black)));
-						bpower.setTextColor((getResources().getColor(R.color.black)));
-						broot.setTextColor((getResources().getColor(R.color.black)));
-
-
 						break;
 					case 1:
+
 						if (eText1.getText().toString().length() != 0) {
 							eText1.setText("");
 
@@ -341,15 +364,22 @@ public class StartActivity extends AppCompatActivity implements OnClickListener 
 						bseven.setClickable(false);
 						beight.setClickable(false);
 						bnine.setClickable(false);
-						btwo.setTextColor((getResources().getColor(R.color.diabletextColor)));
-						bthree.setTextColor((getResources().getColor(R.color.diabletextColor)));
-						bfour.setTextColor((getResources().getColor(R.color.diabletextColor)));
-						bfive.setTextColor((getResources().getColor(R.color.diabletextColor)));
-						bsix.setTextColor((getResources().getColor(R.color.diabletextColor)));
-						bseven.setTextColor((getResources().getColor(R.color.diabletextColor)));
-						beight.setTextColor((getResources().getColor(R.color.diabletextColor)));
-						bnine.setTextColor((getResources().getColor(R.color.diabletextColor)));
+						btwo.setTextColor((getResources().getColor(R.color.light_gray)));
+						bthree.setTextColor((getResources().getColor(R.color.light_gray)));
+						bfour.setTextColor((getResources().getColor(R.color.light_gray)));
+						bfive.setTextColor((getResources().getColor(R.color.light_gray)));
+						bsix.setTextColor((getResources().getColor(R.color.light_gray)));
+						bseven.setTextColor((getResources().getColor(R.color.light_gray)));
+						beight.setTextColor((getResources().getColor(R.color.light_gray)));
+						bnine.setTextColor((getResources().getColor(R.color.light_gray)));
 
+
+						ba.setEnabled(false);
+						bb.setEnabled(false);
+						bc.setEnabled(false);
+						bd.setEnabled(false);
+						be.setEnabled(false);
+						bf.setEnabled(false);
 
 						ba.setClickable(false);
 						bb.setClickable(false);
@@ -359,19 +389,19 @@ public class StartActivity extends AppCompatActivity implements OnClickListener 
 						bf.setClickable(false);
 
 
-						ba.setTextColor((getResources().getColor(R.color.diabletextColor)));
-						bb.setTextColor((getResources().getColor(R.color.diabletextColor)));
-						bc.setTextColor((getResources().getColor(R.color.diabletextColor)));
-						bd.setTextColor((getResources().getColor(R.color.diabletextColor)));
-						be.setTextColor((getResources().getColor(R.color.diabletextColor)));
-						bf.setTextColor((getResources().getColor(R.color.diabletextColor)));
+						ba.setTextColor((getResources().getColor(R.color.light_green)));
+						bb.setTextColor((getResources().getColor(R.color.light_green)));
+						bc.setTextColor((getResources().getColor(R.color.light_green)));
+						bd.setTextColor((getResources().getColor(R.color.light_green)));
+						be.setTextColor((getResources().getColor(R.color.light_green)));
+						bf.setTextColor((getResources().getColor(R.color.light_green)));
 
 						bfactorial.setClickable(false);
 						bpower.setClickable(false);
 						broot.setClickable(false);
-						bfactorial.setTextColor((getResources().getColor(R.color.diabletextColor)));
-						bpower.setTextColor((getResources().getColor(R.color.diabletextColor)));
-						broot.setTextColor((getResources().getColor(R.color.diabletextColor)));
+						bfactorial.setTextColor((getResources().getColor(R.color.light_green)));
+						bpower.setTextColor((getResources().getColor(R.color.light_green)));
+						broot.setTextColor((getResources().getColor(R.color.light_green)));
 
 						break;
 
@@ -404,14 +434,23 @@ public class StartActivity extends AppCompatActivity implements OnClickListener 
 						beight.setClickable(true);
 						bnine.setClickable(true);
 
-						btwo.setTextColor((getResources().getColor(R.color.black)));
-						bthree.setTextColor((getResources().getColor(R.color.black)));
-						bfour.setTextColor((getResources().getColor(R.color.black)));
-						bfive.setTextColor((getResources().getColor(R.color.black)));
-						bsix.setTextColor((getResources().getColor(R.color.black)));
-						bseven.setTextColor((getResources().getColor(R.color.black)));
-						beight.setTextColor((getResources().getColor(R.color.black)));
-						bnine.setTextColor((getResources().getColor(R.color.black)));
+						btwo.setTextColor((getResources().getColor(R.color.white)));
+						bthree.setTextColor((getResources().getColor(R.color.white)));
+						bfour.setTextColor((getResources().getColor(R.color.white)));
+						bfive.setTextColor((getResources().getColor(R.color.white)));
+						bsix.setTextColor((getResources().getColor(R.color.white)));
+						bseven.setTextColor((getResources().getColor(R.color.white)));
+						beight.setTextColor((getResources().getColor(R.color.white)));
+						bnine.setTextColor((getResources().getColor(R.color.white)));
+
+
+						ba.setEnabled(false);
+						bb.setEnabled(false);
+						bc.setEnabled(false);
+						bd.setEnabled(false);
+						be.setEnabled(false);
+						bf.setEnabled(false);
+
 
 						ba.setClickable(false);
 						bb.setClickable(false);
@@ -419,20 +458,20 @@ public class StartActivity extends AppCompatActivity implements OnClickListener 
 						bd.setClickable(false);
 						be.setClickable(false);
 						bf.setClickable(false);
-						ba.setTextColor((getResources().getColor(R.color.diabletextColor)));
-						bb.setTextColor((getResources().getColor(R.color.diabletextColor)));
-						bc.setTextColor((getResources().getColor(R.color.diabletextColor)));
-						bd.setTextColor((getResources().getColor(R.color.diabletextColor)));
-						be.setTextColor((getResources().getColor(R.color.diabletextColor)));
-						bf.setTextColor((getResources().getColor(R.color.diabletextColor)));
+						ba.setTextColor((getResources().getColor(R.color.light_green)));
+						bb.setTextColor((getResources().getColor(R.color.light_green)));
+						bc.setTextColor((getResources().getColor(R.color.light_green)));
+						bd.setTextColor((getResources().getColor(R.color.light_green)));
+						be.setTextColor((getResources().getColor(R.color.light_green)));
+						bf.setTextColor((getResources().getColor(R.color.light_green)));
 
 
 						bfactorial.setClickable(false);
 						bpower.setClickable(false);
 						broot.setClickable(false);
-						bfactorial.setTextColor((getResources().getColor(R.color.diabletextColor)));
-						bpower.setTextColor((getResources().getColor(R.color.diabletextColor)));
-						broot.setTextColor((getResources().getColor(R.color.diabletextColor)));
+						bfactorial.setTextColor((getResources().getColor(R.color.light_green)));
+						bpower.setTextColor((getResources().getColor(R.color.light_green)));
+						broot.setTextColor((getResources().getColor(R.color.light_green)));
 
 
 						break;
@@ -467,14 +506,23 @@ public class StartActivity extends AppCompatActivity implements OnClickListener 
 						bnine.setClickable(false);
 
 
-						btwo.setTextColor((getResources().getColor(R.color.black)));
-						bthree.setTextColor((getResources().getColor(R.color.black)));
-						bfour.setTextColor((getResources().getColor(R.color.black)));
-						bfive.setTextColor((getResources().getColor(R.color.black)));
-						bsix.setTextColor((getResources().getColor(R.color.black)));
-						bseven.setTextColor((getResources().getColor(R.color.black)));
-						beight.setTextColor((getResources().getColor(R.color.diabletextColor)));
-						bnine.setTextColor((getResources().getColor(R.color.diabletextColor)));
+						btwo.setTextColor((getResources().getColor(R.color.white)));
+						bthree.setTextColor((getResources().getColor(R.color.white)));
+						bfour.setTextColor((getResources().getColor(R.color.white)));
+						bfive.setTextColor((getResources().getColor(R.color.white)));
+						bsix.setTextColor((getResources().getColor(R.color.white)));
+						bseven.setTextColor((getResources().getColor(R.color.white)));
+						beight.setTextColor((getResources().getColor(R.color.light_gray)));
+						bnine.setTextColor((getResources().getColor(R.color.light_gray)));
+
+
+						ba.setEnabled(false);
+						bb.setEnabled(false);
+						bc.setEnabled(false);
+						bd.setEnabled(false);
+						be.setEnabled(false);
+						bf.setEnabled(false);
+
 
 						ba.setClickable(false);
 						bb.setClickable(false);
@@ -482,20 +530,20 @@ public class StartActivity extends AppCompatActivity implements OnClickListener 
 						bd.setClickable(false);
 						be.setClickable(false);
 						bf.setClickable(false);
-						ba.setTextColor((getResources().getColor(R.color.diabletextColor)));
-						bb.setTextColor((getResources().getColor(R.color.diabletextColor)));
-						bc.setTextColor((getResources().getColor(R.color.diabletextColor)));
-						bd.setTextColor((getResources().getColor(R.color.diabletextColor)));
-						be.setTextColor((getResources().getColor(R.color.diabletextColor)));
-						bf.setTextColor((getResources().getColor(R.color.diabletextColor)));
+						ba.setTextColor((getResources().getColor(R.color.light_green)));
+						bb.setTextColor((getResources().getColor(R.color.light_green)));
+						bc.setTextColor((getResources().getColor(R.color.light_green)));
+						bd.setTextColor((getResources().getColor(R.color.light_green)));
+						be.setTextColor((getResources().getColor(R.color.light_green)));
+						bf.setTextColor((getResources().getColor(R.color.light_green)));
 
 
 						bfactorial.setClickable(false);
 						bpower.setClickable(false);
 						broot.setClickable(false);
-						bfactorial.setTextColor((getResources().getColor(R.color.diabletextColor)));
-						bpower.setTextColor((getResources().getColor(R.color.diabletextColor)));
-						broot.setTextColor((getResources().getColor(R.color.diabletextColor)));
+						bfactorial.setTextColor((getResources().getColor(R.color.light_green)));
+						bpower.setTextColor((getResources().getColor(R.color.light_green)));
+						broot.setTextColor((getResources().getColor(R.color.light_green)));
 						break;
 
 					case 4:
@@ -528,14 +576,22 @@ public class StartActivity extends AppCompatActivity implements OnClickListener 
 						bnine.setClickable(true);
 
 
-						btwo.setTextColor((getResources().getColor(R.color.black)));
-						bthree.setTextColor((getResources().getColor(R.color.black)));
-						bfour.setTextColor((getResources().getColor(R.color.black)));
-						bfive.setTextColor((getResources().getColor(R.color.black)));
-						bsix.setTextColor((getResources().getColor(R.color.black)));
-						bseven.setTextColor((getResources().getColor(R.color.black)));
-						beight.setTextColor((getResources().getColor(R.color.black)));
-						bnine.setTextColor((getResources().getColor(R.color.black)));
+						btwo.setTextColor((getResources().getColor(R.color.white)));
+						bthree.setTextColor((getResources().getColor(R.color.white)));
+						bfour.setTextColor((getResources().getColor(R.color.white)));
+						bfive.setTextColor((getResources().getColor(R.color.white)));
+						bsix.setTextColor((getResources().getColor(R.color.white)));
+						bseven.setTextColor((getResources().getColor(R.color.white)));
+						beight.setTextColor((getResources().getColor(R.color.white)));
+						bnine.setTextColor((getResources().getColor(R.color.white)));
+
+
+						ba.setEnabled(true);
+						bb.setEnabled(true);
+						bc.setEnabled(true);
+						bd.setEnabled(true);
+						be.setEnabled(true);
+						bf.setEnabled(true);
 
 						ba.setClickable(true);
 						bb.setClickable(true);
@@ -555,9 +611,9 @@ public class StartActivity extends AppCompatActivity implements OnClickListener 
 						bfactorial.setClickable(false);
 						bpower.setClickable(false);
 						broot.setClickable(false);
-						bfactorial.setTextColor((getResources().getColor(R.color.diabletextColor)));
-						bpower.setTextColor((getResources().getColor(R.color.diabletextColor)));
-						broot.setTextColor((getResources().getColor(R.color.diabletextColor)));
+						bfactorial.setTextColor((getResources().getColor(R.color.light_green)));
+						bpower.setTextColor((getResources().getColor(R.color.light_green)));
+						broot.setTextColor((getResources().getColor(R.color.light_green)));
 
 						break;
 
@@ -571,12 +627,36 @@ public class StartActivity extends AppCompatActivity implements OnClickListener 
 
 			}
 		});
-		 UpdateChecker();
+
+
+
 	}
 
-	void UpdateChecker() {
-		   final String url = "https://webandroid.000webhostapp.com/ownjokes/update_app.php";
 
+
+	void UpdateChecker() {
+		final String url = "https://webandroid.000webhostapp.com/ownjokes/update_app.php";
+		new Thread(new Runnable() {
+			@Override
+			public void run() {
+				MobileAds.initialize(getApplicationContext(), "ca-app-pub-1211635675454735~1301340403");
+
+				adView1 = (AdView) findViewById(R.id.ad_view);
+
+				mAdView = (AdView) findViewById(R.id.ad_view);
+				final AdRequest adRequest = new AdRequest.Builder()
+						.addTestDevice(AdRequest.DEVICE_ID_EMULATOR)
+						.build();
+				runOnUiThread(new Runnable() {
+					@Override
+					public void run() {
+						mAdView.loadAd(adRequest);
+						adView1.loadAd(adRequest);
+					}
+				});
+
+			}
+		}).start();
 
 		verifyInternetPermissions();
 		PackageInfo pInfo = null;
@@ -590,42 +670,69 @@ public class StartActivity extends AppCompatActivity implements OnClickListener 
 		version = pInfo.versionName;
 
 
-	//Creating a string request
-	StringRequest stringRequest = new StringRequest(Request.Method.POST, url,
-			new Response.Listener<String>() {
-				@Override
-				public void onResponse(String response) {
-					showJSON(response);
-				}
-			},
-			new Response.ErrorListener() {
-				@Override
-				public void onErrorResponse(VolleyError error) {
-					//You can handle error here if you want
-				}
-			}) {
-		@Override
-		protected Map<String, String> getParams() throws AuthFailureError {
-			Map<String, String> params = new HashMap<>();
-			params.put("version", version);
-			params.put("u_id", "2");
+		//Creating a string request
+		StringRequest stringRequest = new StringRequest(Request.Method.POST, url,
+				new Response.Listener<String>() {
+					@Override
+					public void onResponse(String response) {
+						showJSON(response);
+					}
+				},
+				new Response.ErrorListener() {
+					@Override
+					public void onErrorResponse(VolleyError error) {
+						//You can handle error here if you want
+					}
+				}) {
+			@Override
+			protected Map<String, String> getParams() throws AuthFailureError {
+				Map<String, String> params = new HashMap<>();
+				params.put("version", version);
+				params.put("u_id", "2");
 
 
-			return params;
-		}
-	};
+				return params;
+			}
+		};
 
-	//Adding the string request to the queue
-	RequestQueue requestQueue = Volley.newRequestQueue(this);
-	int socketTimeout = 30000;//30 seconds - change to what you want
-	RetryPolicy policy = new DefaultRetryPolicy(socketTimeout, DefaultRetryPolicy.DEFAULT_MAX_RETRIES, DefaultRetryPolicy.DEFAULT_BACKOFF_MULT);
+		//Adding the string request to the queue
+		RequestQueue requestQueue = Volley.newRequestQueue(this);
+		int socketTimeout = 30000;//30 seconds - change to what you want
+		RetryPolicy policy = new DefaultRetryPolicy(socketTimeout, DefaultRetryPolicy.DEFAULT_MAX_RETRIES, DefaultRetryPolicy.DEFAULT_BACKOFF_MULT);
 		stringRequest.setRetryPolicy(policy);
 		requestQueue.add(stringRequest);
 
 
+	}
+
+void InterstitialAds(final Context context){
+	new Thread(new Runnable() {
+		@Override
+		public void run() {
+			final InterstitialAd mInterstitialAd;
+			mInterstitialAd = new InterstitialAd(context);
+			mInterstitialAd.setAdUnitId("ca-app-pub-1211635675454735/1518006401");
+			final AdRequest adRequest = new AdRequest.Builder() .build();
+
+
+			runOnUiThread(new Runnable() {
+				@Override
+				public void run() {
+					mInterstitialAd.loadAd(adRequest);
+					mInterstitialAd.setAdListener(new AdListener() {
+						@Override
+						public void onAdLoaded() {
+							if (mInterstitialAd.isLoaded()) {
+								mInterstitialAd.show();
+							}
+						}});
+				}
+			});
+
+		}
+	}).start();
+
 }
-
-
 	/*public class UpdateChecker extends AsyncTask<Void,Void,String> {
 
 		private  final String url = "https://webandroid.000webhostapp.com/ownjokes/update_app.php";
@@ -680,8 +787,10 @@ public class StartActivity extends AppCompatActivity implements OnClickListener 
 				s = result.getString(i);
 				s1 = result1.getString(i);
 			}
-			if (Float.parseFloat(s)>Float.parseFloat(version))
-			new Update(this,s,s1).message();
+			if (Float.parseFloat(s)>Float.parseFloat(version)) {
+				update_check = true;
+				new Update(this, s, s1).message();
+			}
 		}
 		catch (Exception e){
 
@@ -700,8 +809,28 @@ public class StartActivity extends AppCompatActivity implements OnClickListener 
 
 		}
 	}
+
+
+	void tut_1(){
+			tut_1.setVisibility(View.VISIBLE);
+
+	}
+	void tut_2(){
+
+			tut_2.setVisibility(View.VISIBLE);
+
+
+	}
+	void tut_3(){
+
+			tut_3.setVisibility(View.VISIBLE);
+
+	}
 @Override
 	public void onClick(View arg0) {
+		if (!update_check){
+			UpdateChecker();
+		}
 		try {
 
             if (rateCount>=6)
@@ -719,27 +848,20 @@ public class StartActivity extends AppCompatActivity implements OnClickListener 
 
 
 			equal = false;
-			str = eText1.getText();
+			str = (Editable) eText1.getText();
 			switch (arg0.getId()) {
-                case R.id.editText1:
-                    tableLayout.setVisibility(View.VISIBLE);
-                    break;
-				case R.id.hide:
 
-					tableLayout.setVisibility(View.GONE);
-					equal=true;
-					mInterstitialAd = new InterstitialAd(StartActivity.this);
-					mInterstitialAd.setAdUnitId("ca-app-pub-1211635675454735/1518006401");
-					AdRequest adRequest = new AdRequest.Builder() .build();
-					mInterstitialAd.loadAd(adRequest);
-					mInterstitialAd.setAdListener(new AdListener() {
-						@Override
-						public void onAdLoaded() {
-							if (mInterstitialAd.isLoaded()) {
-								mInterstitialAd.show();
-							}
-						}});
-					break;
+
+
+
+
+
+
+
+
+
+
+
 				case R.id.a:
 
 					str = str.append(ba.getText());
@@ -771,6 +893,215 @@ public class StartActivity extends AppCompatActivity implements OnClickListener 
 					str = str.append(bf.getText());
 					eText1.setText(str);
 					break;
+
+				case R.id.openB://open bracket
+
+					str = str.append(bopenbracket.getText());
+					eText1.setText(str);
+
+					break;
+				case R.id.closedB://closed bracket
+					str = str.append(bclosedbraclet.getText());
+					eText1.setText(str);
+					break;
+				case R.id.factorial:
+
+					s = eText1.getText().toString().trim();
+					int count1 = 0;
+					for (int i1 = s.length() - 1; i1 >= 0; --i1) {
+						System.out.println("i=" + s.charAt(i1));
+
+						if (s.charAt(i1) == '√' || s.charAt(i1) == '.' || s.charAt(i1) == '!') {
+							count1 = 0;
+							break;
+						} else if (i1 == 0 || s.charAt(i1) == '+' || s.charAt(i1) == '-' || s.charAt(i1) == '*' || s.charAt(i1) == '/' || s.charAt(i1) == '^') {
+							count1 = 1;
+
+							break;
+						}
+
+					}
+					if (count1 == 1)
+						eText1.append(bfactorial.getText());
+					break;
+				case R.id.Root:
+
+					s = eText1.getText().toString();
+					if (s.length() == 0)
+						eText1.setText(str.append(broot.getText()));
+					else if (s.endsWith("+") || s.endsWith("-") || s.endsWith("*") || s.endsWith("/") || s.endsWith("^") || s.endsWith("(")) {
+						{
+							i1 = s.length();
+							char ch = 0;
+
+							do {
+								if (i1 == s.length()) {
+									ch = s.charAt(i1 - 1);
+								} else
+									ch = s.charAt(i1);
+
+								if ((ch == '+' || ch == '-' || ch == '*' || ch == '/' || ch == '^' || ch == '(') && ch != '√') {
+									eText1.setText(str.append(broot.getText()));
+
+									break;
+								}
+								i1 = i1 - 1;
+
+							}
+							while (ch == '^' || ch == '+' || ch == '-' || ch == '*' || ch == '/'|| ch == '^' || i1 == 0 && ch != '√');
+						}
+
+					}
+
+					break;
+				case R.id.power:
+
+					s = eText1.getText().toString().trim();
+					if (s.trim().length()!=0 && !s.endsWith("+") && !s.endsWith("-") && !s.endsWith("*") && !s.endsWith("/") && !s.endsWith("^") && !s.endsWith("!") && !s.endsWith("√")) {
+						eText1.setText(str.append(bpower.getText()));
+					}
+
+
+					break;
+				case R.id.help:
+					AlertDialog.Builder builder=new AlertDialog.Builder(this);
+					LayoutInflater inflater = (LayoutInflater)getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+					final View dialogView= inflater.inflate(R.layout.more_activity, null);
+					builder.setView(dialogView);
+
+					final Button share,history, help,vibrate;
+					TextView textView;
+					String s="";
+					SharedPreferences sharedPreferences;
+					InterstitialAds(dialogView.getContext());
+
+					help=(Button) dialogView.findViewById(R.id.help);
+					vibrate=(Button) dialogView.findViewById(R.id.Button04);
+					share=(Button) dialogView.findViewById(R.id.share);
+					history=(Button) dialogView.findViewById(R.id.history);
+
+					PackageInfo pInfo = null;
+					textView=(TextView) dialogView.findViewById(R.id.textView1);
+					try {
+						pInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
+					} catch (PackageManager.NameNotFoundException e) {
+						int verCode = pInfo.versionCode;
+						e.printStackTrace();
+					}
+
+					String version = pInfo.versionName;
+
+					textView.setText(getApplicationName(this)+" v"+version+"\n" +
+							"\n" +
+							"Developer\n" +
+							"\"VR apps\"");
+
+					help.setOnClickListener(new OnClickListener() {
+						@Override
+						public void onClick(View view) {
+
+							switch (view.getId())
+							{
+
+								case R.id.help:
+									if (tut_3.isShown()){
+										tut_3.setVisibility(View.GONE);
+									}
+									changeSharedPref("tutorial", "", StartActivity.this);
+									if (drawer.isDrawerOpen(GravityCompat.END)) {
+										drawer.closeDrawer(GravityCompat.END);
+									}
+									alertDialog.dismiss();
+									tut_1();
+									break;
+
+
+
+							}
+
+						}
+					});
+					vibrate.setOnClickListener(new OnClickListener() {
+						@Override
+						public void onClick(View view) {
+							switch (view.getId())
+							{
+								case R.id.Button04://vibbration button
+									if (new StartActivity().getSharedPref("Vibrate",dialogView.getContext()).contains("on"))
+									{
+										changeSharedPref("Vibrate","off",dialogView.getContext());
+									}
+									else 	if (new StartActivity().getSharedPref("Vibrate",dialogView.getContext()).contains("off"))
+									{
+										changeSharedPref("Vibrate","on",dialogView.getContext());
+									}
+									changeVibrateStatus(vibrate);
+
+									break;
+							}
+						}
+					});
+
+					history.setOnClickListener(new OnClickListener() {
+						@Override
+						public void onClick(View view) {
+
+							switch (view.getId()) {
+								case R.id.history:
+									alertDialog.dismiss();
+									AlertDialog.Builder builder=new AlertDialog.Builder(StartActivity.this);
+									LayoutInflater inflater = (LayoutInflater)getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+									final View dialogView= inflater.inflate(R.layout.activity_history, null);
+									builder.setView(dialogView);
+
+									alertDialog = builder.setCancelable(true).create();
+									alertDialog.show();
+									InterstitialAds(view.getContext());
+									new History(dialogView,alertDialog);
+									break;
+							}
+						}
+					});
+					share.setOnClickListener(new OnClickListener() {
+						@Override
+						public void onClick(View view) {
+
+							switch (view.getId()) {
+								case R.id.share:
+									Intent intent=new Intent();
+									intent.setAction(Intent.ACTION_SEND);
+									intent.putExtra(Intent.EXTRA_TEXT,"Download best number system converter and calculator two in one app \nhttps://play.google.com/store/apps/details?id=com.c.nccalculator");
+									intent.setType("text/plain");
+									startActivity(intent);
+									break;
+							}
+						}
+					});
+
+
+					changeVibrateStatus(vibrate);
+
+					alertDialog = builder.setCancelable(true).create();
+					alertDialog.show();
+
+					break;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 				case R.id.dot:
 
@@ -849,25 +1180,17 @@ public class StartActivity extends AppCompatActivity implements OnClickListener 
 					str = str.append(bnine.getText());
 					eText1.setText(str);
 					break;
-				case R.id.openB://open bracket
 
-						str = str.append(bopenbracket.getText());
-						eText1.setText(str);
-
-					break;
-				case R.id.closedB://closed bracket
-						str = str.append(bclosedbraclet.getText());
-						eText1.setText(str);
-						break;
 				case R.id.cancel:
 
-                    changeSharedPref("TempStore","",this);
-					eText1.setText("");
-					eText2.setText("");
-					eText3.setText("");
-					eText4.setText("");
-					eText5.setText("");
-					;
+                  //  changeSharedPref("TempStore","",this);
+					s = eText1.getText().toString();
+					if (s.length() != 0) {
+						StringBuilder strbul = new StringBuilder(80);
+						strbul.append(s);
+						s = strbul.deleteCharAt(strbul.length() - 1).toString();
+						eText1.setText(s);
+					}
 					break;
 				case R.id.plus:
 
@@ -909,76 +1232,8 @@ public class StartActivity extends AppCompatActivity implements OnClickListener 
 					}
 
 					break;
-				case R.id.factorial:
-
-					s = eText1.getText().toString().trim();
-					int count1 = 0;
-					for (int i1 = s.length() - 1; i1 >= 0; --i1) {
-						System.out.println("i=" + s.charAt(i1));
-
-						if (s.charAt(i1) == '√' || s.charAt(i1) == '.' || s.charAt(i1) == '!') {
-							count1 = 0;
-							break;
-						} else if (i1 == 0 || s.charAt(i1) == '+' || s.charAt(i1) == '-' || s.charAt(i1) == '*' || s.charAt(i1) == '/' || s.charAt(i1) == '^') {
-							count1 = 1;
-
-							break;
-						}
-
-					}
-					if (count1 == 1)
-						eText1.append(bfactorial.getText());
-					break;
-				case R.id.Root:
-
-					s = eText1.getText().toString();
-					if (s.length() == 0)
-						eText1.setText(str.append(broot.getText()));
-					else if (s.endsWith("+") || s.endsWith("-") || s.endsWith("*") || s.endsWith("/") || s.endsWith("^") || s.endsWith("(")) {
-						{
-							i1 = s.length();
-							char ch = 0;
-
-							do {
-								if (i1 == s.length()) {
-									ch = s.charAt(i1 - 1);
-								} else
-									ch = s.charAt(i1);
-
-								if ((ch == '+' || ch == '-' || ch == '*' || ch == '/' || ch == '^' || ch == '(') && ch != '√') {
-									eText1.setText(str.append(broot.getText()));
-
-									break;
-								}
-								i1 = i1 - 1;
-
-							}
-							while (ch == '^' || ch == '+' || ch == '-' || ch == '*' || ch == '/'|| ch == '^' || i1 == 0 && ch != '√');
-						}
-
-					}
-
-					break;
-				case R.id.power:
-
-					s = eText1.getText().toString().trim();
-					if (s.trim().length()!=0 && !s.endsWith("+") && !s.endsWith("-") && !s.endsWith("*") && !s.endsWith("/") && !s.endsWith("^") && !s.endsWith("!") && !s.endsWith("√")) {
-						eText1.setText(str.append(bpower.getText()));
-					}
 
 
-					break;
-				case R.id.cut:
-
-					s = eText1.getText().toString();
-					if (s.length() != 0) {
-						StringBuilder strbul = new StringBuilder(80);
-						strbul.append(s);
-						s = strbul.deleteCharAt(strbul.length() - 1).toString();
-						eText1.setText(s);
-					}
-
-					break;
 				case R.id.equalto:
 					++rateCount;
 						bequalto.setClickable(false);
@@ -1053,6 +1308,22 @@ public class StartActivity extends AppCompatActivity implements OnClickListener 
                     }
 
 					break;
+
+				case R.id.tut_1_btn:
+					tut_1.setVisibility(View.GONE);
+					tut_2();
+					break;
+				case R.id.tut_2_btn:
+
+					tut_2.setVisibility(View.GONE);
+
+					break;
+				case R.id.tut_3_btn:
+
+					tut_3.setVisibility(View.GONE);
+					changeSharedPref("tutorial", "1", this);
+
+					break;
 			}
 			s = eText1.getText().toString().trim();
 			if (spinindex != 0) {
@@ -1078,6 +1349,28 @@ public class StartActivity extends AppCompatActivity implements OnClickListener 
 			Log.i("error", "", e);
 		}
 	}
+	public static String getApplicationName(Context context) {
+		ApplicationInfo applicationInfo = context.getApplicationInfo();
+		int stringId = applicationInfo.labelRes;
+		return stringId == 0 ? applicationInfo.nonLocalizedLabel.toString() : context.getString(stringId);
+	}
+	void changeVibrateStatus(Button vibrate)
+	{
+		if (getSharedPref("Vibrate",this).contains("on"))
+		{
+			vibrate.setText("Vibrate ON");
+			Drawable img = getResources().getDrawable( android.R.drawable.ic_lock_silent_mode_off );
+			vibrate.setCompoundDrawablesWithIntrinsicBounds( null, null, img, null);
+		}
+		else 	if (getSharedPref("Vibrate",this).contains("off"))
+		{
+			vibrate.setText("Vibrate OFF");
+			Drawable img = getResources().getDrawable( android.R.drawable.ic_lock_silent_mode );
+			vibrate.setCompoundDrawablesWithIntrinsicBounds( null, null, img, null);
+
+		}
+	}
+
 
 	private void textlistener(String s) {
 		NumSysCalculation numSysCalculation = new NumSysCalculation(this);
@@ -1101,16 +1394,7 @@ void changeSharedPref(String key,String value,Context context)
  new SharedTask(key,value,shared_pref,context).execute();
 }
 
-	@Override
-	public boolean onCreateOptionsMenu(Menu menu) {
-		count=0;
-		MenuInflater inflater = getMenuInflater();
-		inflater.inflate(R.menu.main, menu);
 
-		return true;
-
-
-	}
     private void rateApp()
     {
 		if (getSharedPref("Rate",this).contains("no")) {
@@ -1145,63 +1429,48 @@ void changeSharedPref(String key,String value,Context context)
 			builder.create().show();
 		}
     }
-	@Override
-	public boolean onOptionsItemSelected(MenuItem item) {
-		count=0;
-				switch (item.getItemId()) {
-					case R.id.share:
-						Intent intent=new Intent();
-						intent.setAction(Intent.ACTION_SEND);
-						intent.putExtra(Intent.EXTRA_TEXT,"Download best number system converter and calculator two in one app \nhttps://play.google.com/store/apps/details?id=com.c.nccalculator");
-						intent.setType("text/plain");
-						startActivity(intent);
-                        break;
-					case R.id.History:
-						Intent i = new Intent(StartActivity.this, History.class);
-						startActivity(i);
-						finish();
-						return true;
-
-					case R.id.Help:
-
-						MoreActivity more = new MoreActivity();
-						Builder builder = new Builder(StartActivity.this);
-						more.helpBuilder(builder);
-						return true;
-					case R.id.More:
-						i = new Intent(StartActivity.this, MoreActivity.class);
-						startActivity(i);
-						finish();
-						return true;
-					case R.id.Exit:
-						finish();
-						return true;
-
-
-				}
-
-		return super.onOptionsItemSelected(item);
-	}
-
-
-
-
 
 
 
 	@Override
 	public void onBackPressed() {
 
-		tableLayout.setVisibility(View.GONE);
-		count++;
-		if (count==3)
-			finish();
-		else if (count==2)
-			Toast.makeText(this,"Press back again to exit",Toast.LENGTH_SHORT).show();
+		if (drawer.isDrawerOpen(GravityCompat.END)) {
+			drawer.closeDrawer(GravityCompat.END);
+			count=0;
+		}else {
+			count++;
+			if (count == 2)
 
+				finish();
+			else if (count == 1)
+				Toast.makeText(this, "Press back again to exit", Toast.LENGTH_SHORT).show();
 
+		}
 	}
 
 
 
+
+	@Override
+	public void onDrawerSlide(View drawerView, float slideOffset) {
+
+	}
+
+	@Override
+	public void onDrawerOpened(View drawerView) {
+		if (drawer.isDrawerOpen(GravityCompat.END) && getSharedPref("tutorial", this).equals("") && !tut_2.isShown()){
+			tut_3();
+		}
+	}
+
+	@Override
+	public void onDrawerClosed(View drawerView) {
+
+	}
+
+	@Override
+	public void onDrawerStateChanged(int newState) {
+
+	}
 }

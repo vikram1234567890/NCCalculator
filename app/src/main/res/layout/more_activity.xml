@@ -11,16 +11,6 @@ android:background="@color/bg"
     android:paddingTop="@dimen/activity_vertical_margin"
     >
 
-        <Button
-            android:id="@+id/Button02"
-
-            android:onClick="About"
-            android:gravity="center"
-            android:layout_width="330sp"
-            android:layout_height="wrap_content"
-            android:text="@string/about1"
-
-             />
 
 
 
@@ -28,14 +18,42 @@ android:background="@color/bg"
         android:id="@+id/help"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-
+        android:drawableRight="@android:drawable/ic_menu_help"
         android:text="@string/help_activity"
       />
 
     <Button
         android:id="@+id/Button04"
+
+        android:drawableRight="@android:drawable/ic_lock_silent_mode_off"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         />
 
+    <Button
+        android:id="@+id/share"
+        android:text="Share"
+        android:drawableRight="@android:drawable/ic_menu_share"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        />
+
+    <Button
+        android:id="@+id/history"
+        android:text="History"
+        android:drawableRight="@android:drawable/ic_menu_recent_history"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        />
+
+    <TextView
+        android:id="@+id/textView1"
+
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="fill_vertical|center|clip_vertical"
+        android:textSize="15sp"
+        android:textStyle="italic"
+        android:background="@color/white"
+        />
 </TableLayout>

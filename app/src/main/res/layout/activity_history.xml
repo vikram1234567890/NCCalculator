@@ -11,12 +11,32 @@
 
     android:orientation="vertical" >
 
+    <ImageView
+        android:id="@+id/delete"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="end"
+        android:src="@android:drawable/ic_menu_delete"/>
+
+
+    <FrameLayout
+        android:id="@+id/no_history"
+        android:visibility="gone"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+        <TextView
+
+
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:text="No history found"/>
+    </FrameLayout>
     <ListView
         android:id="@+id/listView1"
         android:layout_width="fill_parent"
         android:layout_height="fill_parent"
-         >
+        >
 
     </ListView>
-
 </LinearLayout>

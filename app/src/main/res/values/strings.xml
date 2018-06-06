@@ -6,7 +6,7 @@
     <string name="about_activity">About</string>
     <string name="theme_activity">Themes</string>
     <string name="help_activity">Help</string>
-      <string name="about">NCCalculator v1.3\n\nDeveloped by\n Vikram Ramekar</string>
+
     <string name="about1">About</string>
     <string name="home">To ccalculator</string>
     <string name="input">Input</string>
@@ -36,7 +36,7 @@
     <string name="fact">!</string>
     <string name="power">^</string>
     <string name="hide">Hide</string>
-    <string name="cancel">C</string>
+    <string name="cancel">DEL</string>
     <string name="equal">=</string>
     <string name="a">A</string>
     <string name="b">B</string>
@@ -51,5 +51,8 @@
     <string name="openBracket">(</string>
     <string name="closedBracket">)</string>
     <string name="banner_ad_unit_id">ca-app-pub-1211635675454735/6929071607</string>
+
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
 
 </resources>

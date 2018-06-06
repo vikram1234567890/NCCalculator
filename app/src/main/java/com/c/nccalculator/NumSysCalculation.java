@@ -3,7 +3,7 @@ package com.c.nccalculator;
 
 
 import android.content.Context;
-import android.widget.EditText;
+import android.widget.TextView;
 
 import java.util.Arrays;
 
@@ -16,7 +16,7 @@ Context context;
     {
         this.context=context;
     }
-    private void joiner(String array[], EditText editText)
+    private void joiner(String[] array, TextView editText)
     {
         stringNumber="";
 
